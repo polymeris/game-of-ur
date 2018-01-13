@@ -10,22 +10,6 @@
 
 (spec/check-asserts true)
 
-(def stone-colors #{:white :black})
-(spec/def ::position (spec/tuple int? int?))
-(spec/def ::stone stone-colors)
-(spec/def ::stones (spec/map-of ::position (spec/nilable ::stone)))
-(spec/def ::player stone-colors)
-(spec/def ::turn stone-colors)
-(spec/def ::white pos-int?)
-(spec/def ::black pos-int?)
-(spec/def ::roll (spec/and int? #(<= 0 % 4)))
-(def origin? #(or (= :home %) (spec/valid? ::position %)))
-(spec/def ::origin origin?)
-(spec/def ::home (spec/keys :req-un [::white ::black]))
-(spec/def ::board (spec/keys :req-un [::home ::turn ::stones]))
-(spec/def ::move (spec/keys :req-un [::roll ::origin]))
-(spec/def ::full-move (spec/keys :req-un [::roll ::origin ::destination ::player]))
-
 (def paths
   {:white [:home
            [0 -1] [-1 -1] [-2 -1] [-3 -1]
@@ -53,6 +37,28 @@
 (def opponent
   {:white :black
    :black :white})
+
+(def stone-colors #{:white :black})
+(spec/def ::position (spec/with-gen #(contains? valid-positions %)
+                                    #(spec/gen valid-positions)))
+(spec/def ::home-position (spec/with-gen #(= :home %)
+                                         #(spec/gen #{:home})))
+(spec/def ::goal-position (spec/with-gen #(= :goal %)
+                                         #(spec/gen #{:goal})))
+(spec/def ::stone stone-colors)
+(spec/def ::stones (spec/map-of ::position (spec/nilable ::stone)))
+(spec/def ::player stone-colors)
+(spec/def ::turn stone-colors)
+(spec/def ::white (spec/and int? #(<= 0 % 7)))
+(spec/def ::black (spec/and int? #(<= 0 % 7)))
+(spec/def ::roll (spec/and int? #(<= 0 % 4)))
+
+(spec/def ::origin (spec/or :h ::home-position :p ::position))
+(spec/def ::destination (spec/or :h ::home-position :p ::position :g ::goal-position))
+(spec/def ::home (spec/keys :req-un [::white ::black]))
+(spec/def ::board (spec/keys :req-un [::home ::turn ::stones]))
+(spec/def ::move (spec/keys :req-un [::roll ::origin]))
+(spec/def ::full-move (spec/keys :req-un [::roll ::origin ::destination ::player]))
 
 (defn stones-in-play [{:keys [home stones] :as board} player]
   (spec/assert ::board board)
@@ -83,7 +89,9 @@
   (spec/assert ::board board)
   (spec/assert ::full-move move)
   (and destination
+       (= turn player)
        (or (not= origin :home) (> (home player) 0))
+       (or (= origin :home) (= player (get stones origin)))
        (or (nil? (get stones destination))
            (and (= (opponent turn) (get stones destination))
                 (not (rosettes destination))))))
@@ -96,6 +104,7 @@
     (cond-> board
             true (assoc-in [:stones origin] nil)
             (= opponent-color (get stones destination)) (update-in [:home opponent-color] inc)
+            (= :home origin) (update-in [:home player] dec)
             (not= :goal destination) (assoc-in [:stones destination] player))))
 
 (defn child-board [{:keys [turn] :as board} {:keys [roll] :as move}]
