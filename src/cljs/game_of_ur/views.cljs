@@ -5,13 +5,14 @@
             [game-of-ur.config :as config]))
 
 (defn main-panel []
-  (let [board-state @(re-frame/subscribe [:board-state])]
+  (let [board-state @(re-frame/subscribe [:board-state])
+        last-move @(re-frame/subscribe [:last-move])]
     [:div
-     [board/board board-state]
+     [board/board board-state last-move]
      ; Stuff for development purposes below
      (when config/debug?
        (let [roll (rand-int 5)]
-         (->> board-state
+         (->> (assoc board-state :last-move last-move)
               (map (fn [[title obj]] [:div [:h4 title] [:tt (str obj)]]))
               (into [:div#dev-helpers {:style {:border "1px solid grey"}}
                      [:button

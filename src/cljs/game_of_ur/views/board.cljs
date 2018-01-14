@@ -55,10 +55,15 @@
                :stroke-width 0.015
                :fill         (:cell palette)}])))
 
+(def player-home
+  {:white [0 -2.25]
+   :black [0 2.25]})
+
 (defn move-path [{:keys [roll player origin]}]
   (let [path (get game-board/paths player)
-        ix (.indexOf path origin)
-        steps (subvec path ix (+ ix roll))]
+        ix (if (= :home origin) 0 (.indexOf path origin))
+        origin (if (= :home origin) (player-home player) origin)
+        steps (subvec path ix (inc (+ ix roll)))]
     [:path {:stroke          (str (get-in palette [:stones player]) "7f")
             :fill            :transparent
             :stroke-width    0.2
@@ -81,7 +86,7 @@
   (->> home
        (map (fn [[color count]]
               (->> (range count)
-                   (map #(do [[(- % 2.5) (color {:black 2.25 :white -2.25})] color]))
+                   (map (fn [i] [(update (player-home color) 0 #(- % (/ i 2))) color]))
                    (into {}))))
        (apply merge)
        (map stone)
