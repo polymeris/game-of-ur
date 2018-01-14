@@ -6,3 +6,8 @@
   :initialize-db
   (fn [_ _]
     db/default-db))
+
+(re-frame/reg-event-db
+  :make-move
+  (fn [db [_ move]]
+    (update db :moves conj move)))

@@ -1,3 +1,3 @@
 (ns game-of-ur.db)
 
-(def default-db {})
+(def default-db {:moves []})

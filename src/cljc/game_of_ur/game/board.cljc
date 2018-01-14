@@ -25,6 +25,10 @@
 (def rosettes
   #{[-3 -1] [-3 1] [0 0] [3 -1] [3 1]})
 
+(defn valid-origins [player]
+  (-> (set (paths player))
+      (disj :goal)))
+
 (def valid-positions
   (-> (set/union (set (:white paths)) (set (:black paths)))
       (disj :home :goal)))
@@ -78,16 +82,16 @@
   (or (player-won? board :white)
       (player-won? board :black)))
 
-(defn move-destination [{:keys [roll player origin] :as move}]
+(defn full-move [{:keys [roll player origin] :as move}]
   (spec/assert ::move move)
   (let [path (get paths player)
         destination (get path (+ roll (.indexOf path origin)))]
     (assoc move :destination destination)))
 
 (defn valid-move? [{:keys [home turn stones] :as board}
-                   {:keys [roll player origin destination] :as move}]
+                   {:keys [player origin destination] :as move}]
   (spec/assert ::board board)
-  (spec/assert ::full-move move)
+  (spec/assert ::move move)
   (and destination
        (= turn player)
        (or (not= origin :home) (> (home player) 0))
@@ -102,7 +106,7 @@
   (spec/assert ::full-move move)
   (let [opponent-color (opponent player)]
     (cond-> board
-            true (assoc-in [:stones origin] nil)
+            (not= :home origin) (assoc-in [:stones origin] nil)
             (= opponent-color (get stones destination)) (update-in [:home opponent-color] inc)
             (= :home origin) (update-in [:home player] dec)
             (not= :goal destination) (assoc-in [:stones destination] player))))
@@ -111,7 +115,7 @@
   (spec/assert ::board board)
   (spec/assert ::move move)
   (when-not (game-ended? board)
-    (let [full-move (move-destination (assoc move :player turn))
+    (let [full-move (full-move (assoc move :player turn))
           destination (:destination full-move)
           next-turn (if (and (not= 0 roll) (rosettes destination))
                       turn
@@ -119,3 +123,15 @@
           next-board (move-stone board full-move)]
       (cond (= 0 roll) (assoc board :turn next-turn)
             (valid-move? board full-move) (assoc next-board :turn next-turn)))))
+
+(defn all-moves [{:keys [turn] :as board} roll]
+  (spec/assert ::board board)
+  (spec/assert ::roll roll)
+  (->> (valid-origins turn)
+       (map (fn [origin] (full-move {:roll roll :origin origin :player turn})))))
+
+(defn valid-moves [board roll]
+  (spec/assert ::board board)
+  (spec/assert ::roll roll)
+  (->> (all-moves board roll)
+       (filter (partial valid-move? board))))
