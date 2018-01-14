@@ -1,12 +1,13 @@
 (ns game-of-ur.test.game.board
-  (:require [cljs.test :refer [deftest testing is]]
+  (:import  [clojure.lang ExceptionInfo])
+  (:require [clojure.test :refer [deftest testing is]]
             [game-of-ur.game.board :as b]))
 
 (def move-white-home-0 {:roll 0, :origin :home, :player :white})
 (def move-black-home-0 {:roll 0, :origin :home, :player :black})
 
 (def move-white-home-3 {:roll 3, :origin :home, :player :white})
-(def move-white-0 {:roll 0, :origin [0 0], :player :white})
+(def move-white-0 {:roll 0, :origin [0   0], :player :white})
 (def move-white-1 {:roll 1, :origin [-3 -1], :player :white})
 (def move-white-2 {:roll 3, :origin [-2 -1], :player :white})
 
@@ -21,7 +22,7 @@
   (is (= [-3 0] (:destination (b/full-move move-white-1))))
   (is (= [-2 0] (:destination (b/full-move move-white-2))))
   (is (= [-1 0] (:destination (b/full-move move-black-1))))
-  (is (thrown? js/Error (= :home (:destination (b/full-move invalid-move-black-goal))))))
+  (is (thrown? ExceptionInfo (= :home (:destination (b/full-move invalid-move-black-goal))))))
 
 (def white-turn {:home   {:white 3, :black 5}
                  :turn   :white
