@@ -68,19 +68,29 @@
                                   (map (fn [[x y]] (str " L " x " " y)))
                                   (apply str "M " (first origin) " " (second origin)))}]))
 
-(defn- stone [{:keys [x y color]}]
+(defn- stone [[[x y] color]]
   (when color
     [:circle {:fill (get-in palette [:stones color]) :cx x :cy (- y 0.015) :r 0.3 :filter "url(#drop-shadow)"}]))
 
-(defn- stones [s]
-  (->> s
+(defn- in-play-stones [stones]
+  (->> stones
        (map stone)
-       (into [:g])))
+       (into [:g.in-play-stones])))
 
-(defn board [state last-move]
+(defn- home-stones [home]
+  (->> home
+       (map (fn [[color count]]
+              (->> (range count)
+                   (map #(do [[(- % 2.5) (color {:black 2.25 :white -2.25})] color]))
+                   (into {}))))
+       (apply merge)
+       (map stone)
+       (into [:g.home-stones])))
+
+(defn board [{:keys [home stones]} last-move]
   [:svg {:width    "100%"
          :height   "100%"
-         :view-box "-4 -1.725 9 3.5"}
+         :view-box "-4 -2.75 9 5.5"}
    [:defs
     [:filter {:id "drop-shadow" :height "150%"}
      [:feOffset {:in "SourceAlpha" :dy 0.015}]
@@ -90,4 +100,5 @@
     [board-background]
     [cells]
     (when last-move [move-path last-move])
-    [stones (:stones state)]]])
+    [home-stones home]
+    [in-play-stones stones]]])
