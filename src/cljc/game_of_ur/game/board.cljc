@@ -64,7 +64,10 @@
 (spec/def ::move (spec/keys :req-un [::roll ::origin]))
 (spec/def ::full-move (spec/keys :req-un [::roll ::origin ::destination ::player]))
 
-(defn stones-in-play [{:keys [home stones] :as board} player]
+(defn stones-in-play
+  "Counts the amount of stones that aren't
+   in :goal, of a given player and a given board."
+  [{:keys [home stones] :as board} player]
   (spec/assert ::board board)
   (spec/assert ::player player)
   (->> (vals stones)
@@ -72,36 +75,58 @@
        (count)
        (+ (get home player))))
 
-(defn player-won? [board player]
+(defn player-won?
+  "Returns true iff the given player
+   has no stones left to play."
+  [board player]
   (spec/assert ::board board)
   (spec/assert ::player player)
   (= 0 (stones-in-play board player)))
 
-(defn game-ended? [board]
+(defn game-ended?
+  "Returns true iff either white or black wins"
+  [board]
   (spec/assert ::board board)
   (or (player-won? board :white)
       (player-won? board :black)))
 
-(defn full-move [{:keys [roll player origin] :as move}]
+(defn full-move
+  "Takes a roll and an origin coordinate, and adds the
+   destination coordinate of the move"
+  [{:keys [roll player origin] :as move}]
   (spec/assert ::move move)
   (let [path (get paths player)
         destination (get path (+ roll (.indexOf path origin)))]
     (assoc move :destination destination)))
 
-(defn valid-move? [{:keys [home turn stones] :as board}
-                   {:keys [player origin destination] :as move}]
+(defn valid-move?
+  "Should return true iff the given full-move is
+   valid in the current board and state, which will
+   only happen if:
+     - If the move is taking a stone from home, home cannot be empty
+     - If the origin is in the board, there must be a right colored stone on it
+     - Either the destination is empty, or there is an oppnent stone on it and
+       the square is not a member of rosettes."
+  [{:keys [home turn stones] :as board}
+   {:keys [player origin destination] :as move}]
   (spec/assert ::board board)
   (spec/assert ::move move)
-  (and destination
-       (= turn player)
-       (or (not= origin :home) (> (home player) 0))
-       (or (= origin :home) (= player (get stones origin)))
-       (or (nil? (get stones destination))
-           (and (= (opponent turn) (get stones destination))
-                (not (rosettes destination))))))
+  (let [in-destination (get stones destination)]
+    (and destination
+         (= turn player)                          
+         (or (not= origin :home)    (> (home player) 0))
+         (or (= origin :home)       (= player (get stones origin)))
+         (or (nil? in-destination)  (= (opponent turn) in-destination))
+         (or (nil? in-destination)  (not (rosettes destination))))))
 
-(defn move-stone [{:keys [stones] :as board}
-                  {:keys [player origin destination] :as move}]
+(defn move-stone
+  "- If the origin is in the board, it replace the content of origin with nil
+   - If the destination content is an opponent stone, the amount of stones
+     in opponent's :home must be incremented.
+   - If the origin is home, the amount of stones in :home decreases.
+   - If the destination is not :goal, the stone must be placed on it."
+  [{:keys [stones] :as board}
+   {:keys [player origin destination] :as move}]
   (spec/assert ::board board)
   (spec/assert ::full-move move)
   (let [opponent-color (opponent player)]
@@ -111,7 +136,11 @@
             (= :home origin) (update-in [:home player] dec)
             (not= :goal destination) (assoc-in [:stones destination] player))))
 
-(defn child-board [{:keys [turn] :as board} {:keys [roll] :as move}]
+(defn child-board
+  "It takes a move and a board (see specs), and returns
+   a new board in which 'move' was applied, that might
+   or might not be the same as before."
+  [{:keys [turn] :as board} {:keys [roll] :as move}]
   (spec/assert ::board board)
   (spec/assert ::move move)
   (when-not (game-ended? board)
@@ -124,13 +153,18 @@
       (cond (= 0 roll) (assoc board :turn next-turn)
             (valid-move? board full-move) (assoc next-board :turn next-turn)))))
 
-(defn all-moves [{:keys [turn] :as board} roll]
+(defn all-moves
+  "returns all posible moves with a given roll assuming
+   an empty board"
+  [{:keys [turn] :as board} roll]
   (spec/assert ::board board)
   (spec/assert ::roll roll)
   (->> (valid-origins turn)
        (map (fn [origin] (full-move {:roll roll :origin origin :player turn})))))
 
-(defn valid-moves [board roll]
+(defn valid-moves
+  "returns all valid moves with a given roll"
+  [board roll]
   (spec/assert ::board board)
   (spec/assert ::roll roll)
   (->> (all-moves board roll)
