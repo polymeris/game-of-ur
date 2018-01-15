@@ -120,7 +120,7 @@
          (or (nil? in-destination)  (not (rosettes destination))))))
 
 (defn move-stone
-  "- If the origin is in the board, it replace the content of origin with nil
+  "- If the origin is in the board must be replaced with nil.
    - If the destination content is an opponent stone, the amount of stones
      in opponent's :home must be incremented.
    - If the origin is home, the amount of stones in :home decreases.
@@ -154,8 +154,8 @@
             (valid-move? board full-move) (assoc next-board :turn next-turn)))))
 
 (defn all-moves
-  "returns all posible moves with a given roll assuming
-   an empty board"
+  "returns all possible moves with a given roll,
+   not taking in count if they are valid or not."
   [{:keys [turn] :as board} roll]
   (spec/assert ::board board)
   (spec/assert ::roll roll)
