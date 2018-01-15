@@ -9,12 +9,12 @@
         last-move @(re-frame/subscribe [:last-move])]
     [:div
      [board/board board-state last-move]
-     ; Stuff for development purposes below
+                                        ; Stuff for development purposes below
      (when config/debug?
-       (let [roll (rand-int 5)]
+       (let [roll (rand-nth [0 4 1 1 1 1 3 3 3 3 2 2 2 2 2 2])]
          (->> (assoc board-state :last-move last-move)
               (map (fn [[title obj]] [:div [:h4 title] [:tt (str obj)]]))
               (into [:div#dev-helpers {:style {:border "1px solid grey"}}
                      [:button
-                      {:on-click #(re-frame/dispatch [:make-move (rand-nth (game-board/valid-moves board-state roll))])}
+                      {:on-click #(re-frame/dispatch [:make-move (rand-nth (seq (game-board/valid-moves board-state roll)))])}
                       (str "Random move with roll " roll)]]))))]))

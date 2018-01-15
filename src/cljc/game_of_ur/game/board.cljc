@@ -56,9 +56,12 @@
 (spec/def ::white (spec/and int? #(<= 0 % 7)))
 (spec/def ::black (spec/and int? #(<= 0 % 7)))
 (spec/def ::roll (spec/and int? #(<= 0 % 4)))
+(spec/def ::pass-position (spec/with-gen #(= :pass %)
+                                         #(spec/gen #{:pass})))
 
-(spec/def ::origin (spec/or :h ::home-position :p ::position))
-(spec/def ::destination (spec/or :h ::home-position :p ::position :g ::goal-position))
+(spec/def ::origin (spec/or :h ::home-position :p ::position :pass ::pass-position))
+(spec/def ::destination (spec/or :h ::home-position :p ::position :g ::goal-position
+                                 :pass ::pass-position))
 (spec/def ::home (spec/keys :req-un [::white ::black]))
 (spec/def ::board (spec/keys :req-un [::home ::turn ::stones]))
 (spec/def ::move (spec/keys :req-un [::roll ::origin]))
@@ -96,10 +99,12 @@
   [{:keys [roll player origin] :as move}]
   (spec/assert ::move move)
   (let [path (get paths player)
-        destination (get path (+ roll (.indexOf path origin)))]
+        destination (if (= :pass origin)
+                      :pass
+                      (get path (+ roll (.indexOf path origin))))]
     (assoc move :destination destination)))
 
-(defn valid-move?
+(defn- valid-non-pass-move?
   "Should return true iff the given full-move is
    valid in the current board and state, which will
    only happen if:
@@ -114,11 +119,21 @@
   (let [in-destination (get stones destination)]
     (and destination
          (= turn player)                          
-         (or (not= origin :home)    (> (home player) 0))
-         (or (= origin :home)       (= player (get stones origin)))
-         (or (nil? in-destination)  (= (opponent turn) in-destination))
-         (or (nil? in-destination)  (not (rosettes destination))))))
+         (or (not= origin :home)   (> (home player) 0))
+         (or (= origin :home)      (= player (get stones origin)))
+         (or (nil? in-destination) (= (opponent turn) in-destination))
+         (or (nil? in-destination) (not (rosettes destination))))))
 
+(declare valid-moves)
+
+(defn valid-move?
+  "Same that valid-non-pass-move?
+   but taking in count the :pass option"
+  [board {:keys [roll] :as move}]
+  (spec/assert ::move move)
+  (spec/assert ::board board)
+  (contains? (valid-moves board roll) move))
+    
 (defn move-stone
   "- If the origin is in the board must be replaced with nil.
    - If the destination content is an opponent stone, the amount of stones
@@ -150,7 +165,8 @@
                       turn
                       (opponent turn))
           next-board (move-stone board full-move)]
-      (cond (= 0 roll) (assoc board :turn next-turn)
+      (cond (= :pass destination) (assoc board :turn next-turn)
+            (= 0 roll) (assoc board :turn next-turn)
             (valid-move? board full-move) (assoc next-board :turn next-turn)))))
 
 (defn all-moves
@@ -160,12 +176,15 @@
   (spec/assert ::board board)
   (spec/assert ::roll roll)
   (->> (valid-origins turn)
-       (map (fn [origin] (full-move {:roll roll :origin origin :player turn})))))
+       (map (fn [origin] (full-move {:roll roll, :origin origin, :player turn})))))
 
 (defn valid-moves
   "returns all valid moves with a given roll"
-  [board roll]
+  [{:keys [turn] :as board} roll]
   (spec/assert ::board board)
   (spec/assert ::roll roll)
-  (->> (all-moves board roll)
-       (filter (partial valid-move? board))))
+  (let [moves (->> (all-moves board roll)
+                   (filter (partial valid-non-pass-move? board)))]
+    (if-not (empty? moves)
+      (set moves)
+      #{{:origin :pass, :roll roll, :destination :pass, :player turn}})))
