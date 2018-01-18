@@ -1,6 +1,7 @@
 (ns game-of-ur.views.board
   (:require [game-of-ur.config :as config]
-            [game-of-ur.game.board :as game-board]))
+            [game-of-ur.game.board :as game-board]
+            [re-frame.core :as re-frame]))
 
 (def palette {:board             "#efdfc4"
               :cell              "#efebce"
@@ -59,19 +60,26 @@
   {:white [0 -2.25]
    :black [0 2.25]})
 
-(defn move-path [{:keys [roll player origin]}]
-  (let [path (get game-board/paths player)
-        ix (if (= :home origin) 0 (.indexOf path origin))
-        origin (if (= :home origin) (player-home player) origin)
-        steps (subvec path ix (inc (+ ix roll)))]
-    [:path {:stroke          (str (get-in palette [:stones player]) "7f")
-            :fill            :transparent
-            :stroke-width    0.2
-            :stroke-linecap  :round
-            :stroke-linejoin :round
-            :d               (->> (rest steps)
-                                  (map (fn [[x y]] (str " L " x " " y)))
-                                  (apply str "M " (first origin) " " (second origin)))}]))
+(def player-goal
+  {:white [2 -1]
+   :black [2 1]})
+
+(defn move-path [{:keys [roll player origin destination]}]
+  (when-not (or (= :pass origin) (keyword? destination))
+    (let [from-home? (= :home origin)
+          path (get game-board/paths player)
+          start-index (if from-home? 0 (.indexOf path origin))
+          end-index (min (count path) (inc (+ start-index roll)))
+          origin (if from-home? (player-home player) origin)
+          steps (subvec path start-index end-index)]
+      [:path {:stroke          (str (get-in palette [:stones player]) "7f")
+              :fill            :transparent
+              :stroke-width    0.2
+              :stroke-linecap  :round
+              :stroke-linejoin :round
+              :d               (->> (rest steps)
+                                    (map (fn [[x y]] (str " L " x " " y)))
+                                    (apply str "M " (first origin) " " (second origin)))}])))
 
 (defn- stone [[[x y] color]]
   (when color
@@ -79,7 +87,7 @@
 
 (defn- in-play-stones [stones]
   (->> stones
-       (map stone)
+       (map (fn [[coords color]] [:g {:on-click #(re-frame/dispatch [:play-stone coords])} (stone [coords color])]))
        (into [:g.in-play-stones])))
 
 (defn- home-stones [home]
@@ -90,7 +98,7 @@
                    (into {}))))
        (apply merge)
        (map stone)
-       (into [:g.home-stones])))
+       (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}])))
 
 (defn board [{:keys [home stones]} last-move]
   [:svg {:width    "100%"
