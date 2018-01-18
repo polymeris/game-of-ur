@@ -78,6 +78,14 @@
        (count)
        (+ (get home player))))
 
+(defn stones-in-goal
+  "Returns number of stones in goal for the given board and player"
+  [board player]
+  (spec/assert ::board board)
+  (spec/assert ::player player)
+  (- (get-in initial-board [:home player])
+     (stones-in-play board player)))
+
 (defn player-won?
   "Returns true iff the given player
    has no stones left to play."
@@ -146,10 +154,10 @@
   (spec/assert ::full-move move)
   (let [opponent-color (opponent player)]
     (cond-> board
-            (not= :home origin) (assoc-in [:stones origin] nil)
+            (not (#{:home :pass} origin)) (assoc-in [:stones origin] nil)
+            (not (#{:home :goal :pass} destination)) (assoc-in [:stones destination] player)
             (= opponent-color (get stones destination)) (update-in [:home opponent-color] inc)
-            (= :home origin) (update-in [:home player] dec)
-            (not= :goal destination) (assoc-in [:stones destination] player))))
+            (= :home origin) (update-in [:home player] dec))))
 
 (defn child-board
   "It takes a move and a board (see specs), and returns
