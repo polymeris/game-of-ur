@@ -61,8 +61,8 @@
    :black [0 2.25]})
 
 (def player-goal
-  {:white [4.2 -2]
-   :black [4.2 2]})
+  {:white [4.79 -2]
+   :black [4.79 2]})
 
 (defn move-path [{:keys [roll player origin destination]}]
   (when-not (or (= :pass origin) (keyword? destination))
@@ -101,8 +101,8 @@
        (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}])))
 
 (defn board [{:keys [home stones] :as current-board} last-move]
-  [:svg {:width    "80%"
-         :height   "80%"
+  [:svg {:width    "100%"
+         :height   "100%"
          :view-box "-4 -2.75 9 5.5"}
    [:defs
     [:filter {:id "drop-shadow" :height "150%"}
@@ -114,6 +114,6 @@
     [cells]
     (when last-move [move-path last-move])
     [off-board-stones home player-home]
-    [:g {:transform "scale(0.5)"}
+    [:g {:transform "scale(0.45)"}
      [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
     [in-play-stones stones]]])
