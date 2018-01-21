@@ -61,8 +61,8 @@
    :black [0 2.25]})
 
 (def player-goal
-  {:white [2 -1]
-   :black [2 1]})
+  {:white [4.2 -2]
+   :black [4.2 2]})
 
 (defn move-path [{:keys [roll player origin destination]}]
   (when-not (or (= :pass origin) (keyword? destination))
@@ -90,19 +90,19 @@
        (map (fn [[coords color]] [:g {:on-click #(re-frame/dispatch [:play-stone coords])} (stone [coords color])]))
        (into [:g.in-play-stones])))
 
-(defn- home-stones [home]
-  (->> home
+(defn- off-board-stones [stones location]
+  (->> stones
        (map (fn [[color count]]
               (->> (range count)
-                   (map (fn [i] [(update (player-home color) 0 #(- % (/ i 2))) color]))
+                   (map (fn [i] [(update (location color) 0 #(- % (/ i 2))) color]))
                    (into {}))))
        (apply merge)
        (map stone)
        (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}])))
 
-(defn board [{:keys [home stones]} last-move]
-  [:svg {:width    "100%"
-         :height   "100%"
+(defn board [{:keys [home stones] :as current-board} last-move]
+  [:svg {:width    "80%"
+         :height   "80%"
          :view-box "-4 -2.75 9 5.5"}
    [:defs
     [:filter {:id "drop-shadow" :height "150%"}
@@ -113,5 +113,7 @@
     [board-background]
     [cells]
     (when last-move [move-path last-move])
-    [home-stones home]
+    [off-board-stones home player-home]
+    [:g {:transform "scale(0.5)"}
+     [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
     [in-play-stones stones]]])

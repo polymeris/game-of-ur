@@ -80,11 +80,12 @@
 
 (defn stones-in-goal
   "Returns number of stones in goal for the given board and player"
-  [board player]
+  [board]
   (spec/assert ::board board)
-  (spec/assert ::player player)
-  (- (get-in initial-board [:home player])
-     (stones-in-play board player)))
+  {:white (- (get-in initial-board [:home :white])
+             (stones-in-play board :white))
+   :black (- (get-in initial-board [:home :black])
+             (stones-in-play board :black))})
 
 (defn player-won?
   "Returns true iff the given player

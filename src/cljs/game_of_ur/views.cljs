@@ -9,7 +9,7 @@
         last-move @(re-frame/subscribe [:last-move])]
     [:div
      [board/board board-state last-move]
-                                        ; Stuff for development purposes below
+     ; Stuff for development purposes below
      (when config/debug?
        (let [roll (rand-nth [0 4 1 1 1 1 3 3 3 3 2 2 2 2 2 2])]
          (->> (assoc board-state :last-move last-move)
