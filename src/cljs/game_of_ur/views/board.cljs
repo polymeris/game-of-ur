@@ -91,14 +91,13 @@
        (into [:g.in-play-stones])))
 
 (defn- off-board-stones [stones location]
-  (->> stones
-       (map (fn [[color count]]
-              (->> (range count)
-                   (map (fn [i] [(update (location color) 0 #(- % (/ i 2))) color]))
-                   (into {}))))
-       (apply merge)
-       (map stone)
-       (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}])))
+  (letfn [(place [[color count]]
+            (map (fn [i] [(update (location color) 0 #(- % (/ i 2))) color])
+                 (range count)))]
+    (->> stones
+         (mapcat place)  
+         (map stone)
+         (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}]))))
 
 (defn board [{:keys [home stones] :as current-board} last-move]
   [:svg {:width    "100%"
