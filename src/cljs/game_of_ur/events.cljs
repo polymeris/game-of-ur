@@ -10,4 +10,11 @@
 (re-frame/reg-event-db
   :make-move
   (fn [db [_ move]]
-    (update db :moves conj move)))
+    (-> db
+        (update :moves conj move)
+        (dissoc :roll))))
+
+(re-frame/reg-event-db
+  :roll-dice
+  (fn [db _]
+    (assoc db :roll (rand-nth [0 4 1 1 1 1 3 3 3 3 2 2 2 2 2 2]))))

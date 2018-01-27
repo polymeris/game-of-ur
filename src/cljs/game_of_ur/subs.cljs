@@ -14,3 +14,8 @@
   (fn [db]
     (when-not (empty? (:moves db))
       (spec/assert ::board/full-move (last (:moves db))))))
+
+(re-frame/reg-sub
+  :roll
+  (fn [db]
+    (:roll db)))
