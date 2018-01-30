@@ -21,6 +21,13 @@
     (assoc db :roll (rand-nth [0 4 1 1 1 1 3 3 3 3 2 2 2 2 2 2]))))
 
 (re-frame/reg-event-db
+ :pass
+ (fn [db _]
+   (-> db
+       (update :moves conj {(:roll db) (:player db) :origin :pass :destination :pass})
+       (dissoc :roll))))
+
+(re-frame/reg-event-db
   :play-stone
   (fn [db [_ coords]]
     (if-let [roll (:roll db)]
