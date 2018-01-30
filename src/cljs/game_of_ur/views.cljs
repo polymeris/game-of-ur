@@ -5,13 +5,21 @@
             [game-of-ur.config :as config]))
 
 (defn main-panel []
-  (let [roll @(re-frame/subscribe [:roll])
+  (let [roll        @(re-frame/subscribe [:roll])
         board-state @(re-frame/subscribe [:board-state])
-        last-move @(re-frame/subscribe [:last-move])]
+        last-move   @(re-frame/subscribe [:last-move])]
     [:div
      [board/board board-state last-move]
-     (if roll [:b (str "Rolled " roll)]
-              [:button {:on-click #(re-frame/dispatch [:roll-dice])} "Roll dice"])
+     (if roll
+       [:b (str "Rolled " roll)]
+       [:button {:on-click #(re-frame/dispatch [:roll-dice])} "Roll dice"])
+     (when (and roll (game-board/must-pass? board-state roll))
+       [:button.pass
+        {:on-click #(re-frame/dispatch
+                      [:make-move
+                        (game-board/pass-move roll (get board-state :turn))])}
+        "Pass"])  
+                             
      ; Stuff for development purposes below
      (when config/debug?
        (->> (assoc board-state :last-move last-move)

@@ -102,6 +102,9 @@
   (or (player-won? board :white)
       (player-won? board :black)))
 
+(defn pass-move [roll turn]
+  {:origin :pass, :roll roll, :destination :pass, :player turn})
+
 (defn full-move
   "Takes a roll and an origin coordinate, and adds the
    destination coordinate of the move"
@@ -196,4 +199,12 @@
                    (filter (partial valid-non-pass-move? board)))]
     (if-not (empty? moves)
       (set moves)
-      #{{:origin :pass, :roll roll, :destination :pass, :player turn}})))
+      (set (pass-move roll turn)))))
+
+(defn must-pass?
+  "returns true if pass is a valid move"
+  [{:keys [turn] :as board} roll]
+  (or (zero? roll)
+      (valid-move?
+        board
+        (pass-move roll turn))))
