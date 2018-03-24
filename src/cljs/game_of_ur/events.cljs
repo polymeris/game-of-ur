@@ -3,6 +3,11 @@
             [game-of-ur.db :as db]
             [game-of-ur.game.board :as board]))
 
+(re-frame/reg-fx
+  :sound
+  (fn [fn]
+    (.play (js/Audio. fn))))
+
 (re-frame/reg-event-db
   :initialize-db
   (fn [_ _]
@@ -27,17 +32,14 @@
        (update :moves conj {(:roll db) (:player db) :origin :pass :destination :pass})
        (dissoc :roll))))
 
-(re-frame/reg-event-db
+(re-frame/reg-event-fx
   :play-stone
-  (fn [db [_ coords]]
-    (if-let [roll (:roll db)]
-      (let [board-state (reduce board/child-board board/initial-board (:moves db))
+  (fn [{{roll :roll moves :moves} :db} [_ coords]]
+    (when roll
+      (let [board-state (reduce board/child-board board/initial-board moves)
             move (board/full-move {:roll   roll
                                    :player (:turn board-state)
                                    :origin coords})]
-        (if (board/valid-move? board-state move)
-          (-> db
-              (update :moves conj move)
-              (dissoc :roll))
-          db))
-      db)))
+        (when (board/valid-move? board-state move)
+          {:sound    "sfx/clack.mp3"
+           :dispatch [:make-move move]})))))
