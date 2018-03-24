@@ -10,9 +10,6 @@
         last-move   @(re-frame/subscribe [:last-move])]
     [:div
      [board/board board-state last-move]
-     (if roll
-       [:b (str "Rolled " roll)]
-       [:button {:on-click #(re-frame/dispatch [:roll-dice])} "Roll dice"])
      (when (and roll (game-board/must-pass? board-state roll))
        [:button.pass
         {:on-click #(re-frame/dispatch

@@ -1,16 +1,9 @@
 (ns game-of-ur.views.board
   (:require [game-of-ur.config :as config]
             [game-of-ur.game.board :as game-board]
+            [game-of-ur.views.style :as style]
+            [game-of-ur.views.dice :as dice]
             [re-frame.core :as re-frame]))
-
-(def palette {:board             "#efdfc4"
-              :cell              "#efebce"
-              :cell-border       "#999684"
-              :rosette-primary   "#84c0c6"
-              :rosette-secondary "#46b1c9"
-              :highlight         "#eac435"
-              :stones            {:white "#fbfdfe"
-                                  :black "#1a414a"}})
 
 (def rosette-path "M 0 0
                    Q 0.1,0.3 0,0.4 Q -.1,0.3 0,0
@@ -21,8 +14,8 @@
 
 (defn board-background []
   [:path {:id           "board-background"
-          :stroke       (:board palette)
-          :fill         (:board palette)
+          :stroke       (:board style/palette)
+          :fill         (:board style/palette)
           :stroke-width 0.2
           :filter       "url(#drop-shadow)"
           :d            "M -3.5 0
@@ -35,15 +28,15 @@
    [:rect {:x -0.5 :y -0.5 :width 1 :height 1}]
    (when (get game-board/rosettes [x y])
      [:g {:stroke-width 0}
-      [:path {:fill      (:rosette-secondary palette)
+      [:path {:fill      (:rosette-secondary style/palette)
               :transform "rotate(22.5)"
               :d         rosette-path}]
-      [:path {:fill      (:rosette-primary palette)
+      [:path {:fill      (:rosette-primary style/palette)
               :transform "rotate(-22.5)"
               :d         rosette-path}]
       [:circle {:stroke-width 0.02
-                :stroke       (:cell palette)
-                :fill         (:rosette-primary palette)
+                :stroke       (:cell style/palette)
+                :fill         (:rosette-primary style/palette)
                 :r            0.1}]])
    (when config/debug?
      [:text {:x 0 :y 0.075 :text-anchor :middle :font-size 0.15} (str "[" x ", " y "]")])])
@@ -52,9 +45,9 @@
   (->>
     game-board/valid-positions
     (map cell)
-    (into [:g {:stroke       (:cell-border palette)
+    (into [:g {:stroke       (:cell-border style/palette)
                :stroke-width 0.015
-               :fill         (:cell palette)}])))
+               :fill         (:cell style/palette)}])))
 
 (def player-home
   {:white [0 -2.25]
@@ -72,7 +65,7 @@
           end-index (min (count path) (inc (+ start-index roll)))
           origin (if from-home? (player-home player) origin)
           steps (subvec path start-index end-index)]
-      [:path {:stroke          (str (get-in palette [:stones player]) "7f")
+      [:path {:stroke          (str (get-in style/palette [:stones player]) "7f")
               :fill            :transparent
               :stroke-width    0.2
               :stroke-linecap  :round
@@ -83,7 +76,7 @@
 
 (defn- stone [[[x y] color]]
   (when color
-    [:circle {:fill (get-in palette [:stones color]) :cx x :cy (- y 0.015) :r 0.3 :filter "url(#drop-shadow)"}]))
+    [:circle {:fill (get-in style/palette [:stones color]) :cx x :cy (- y 0.015) :r 0.3 :filter "url(#drop-shadow)"}]))
 
 (defn- in-play-stones [stones]
   (->> stones
@@ -95,24 +88,36 @@
             (map (fn [i] [(update (location color) 0 #(- % (/ i 2))) color])
                  (range count)))]
     (->> stones
-         (mapcat place)  
+         (mapcat place)
          (map stone)
          (into [:g.home-stones {:on-click #(re-frame/dispatch [:play-stone :home])}]))))
 
-(defn board [{:keys [home stones] :as current-board} last-move]
-  [:svg {:width    "100%"
-         :height   "100%"
-         :view-box "-4 -2.75 9 5.5"}
-   [:defs
-    [:filter {:id "drop-shadow" :height "150%"}
-     [:feOffset {:in "SourceAlpha" :dy 0.015}]
-     [:feGaussianBlur {:std-deviation 0.002}]
-     [:feBlend {:in "SourceGraphic"}]]]
-   [:g
-    [board-background]
-    [cells]
-    (when last-move [move-path last-move])
-    [off-board-stones home player-home]
-    [:g {:transform "scale(0.45)"}
-     [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
-    [in-play-stones stones]]])
+(defn board []
+  (let [{:keys [home stones turn] :as current-board} @(re-frame/subscribe [:board-state])
+        last-move @(re-frame/subscribe [:last-move])
+        roll @(re-frame/subscribe [:roll])]
+    [:svg {:width    "100%"
+           :height   "100%"
+           :view-box "-4 -2.75 9 5.5"}
+     [:defs
+      [:filter {:id "drop-shadow" :height "150%"}
+       [:feOffset {:in "SourceAlpha" :dy 0.015}]
+       [:feGaussianBlur {:std-deviation 0.002}]
+       [:feBlend {:in "SourceGraphic"}]]
+      [:filter {:id "inner-shadow" :height "120%"}
+       [:feOffset {:dy -0.08}]
+       [:feGaussianBlur {:std-deviation 0.06 :result :offset-blur}]
+       [:feComposite {:operator :out :in "SourceGraphic" :in2 :offset-blur :result :inverse}]
+       [:feFlood {:flood-color :black :flood-opacity 0.15 :result :color}]
+       [:feComposite {:operator :in :in :color :in2 :inverse :result :shadow}]
+       [:feComposite {:operator :over :in :shadow :in2 "SourceGraphic"}]]]
+     [:g
+      [board-background]
+      [cells]
+      (when last-move [move-path last-move])
+      [off-board-stones home player-home]
+      [:g {:transform "scale(0.45)"}
+       [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
+      [in-play-stones stones]
+      [:g {:transform (str "translate(2.25, " (second (player-home turn)) ")")}
+       [dice/dice roll]]]]))
