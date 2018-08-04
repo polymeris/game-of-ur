@@ -87,6 +87,16 @@
    :black (- (get-in initial-board [:home :black])
              (stones-in-play board :black))})
 
+(defn stones-on-board
+  "Return the number of stones not in goal or home for the given player"
+  [{:keys [stones]} player]
+  (spec/assert ::stones stones)
+  (spec/assert ::player player)
+  (->> stones
+       (vals)
+       (filter #(= % player))
+       (count)))
+
 (defn player-won?
   "Returns true iff the given player
    has no stones left to play."
@@ -130,9 +140,9 @@
   (spec/assert ::move move)
   (let [in-destination (get stones destination)]
     (and destination
-         (= turn player)                          
-         (or (not= origin :home)   (> (home player) 0))
-         (or (= origin :home)      (= player (get stones origin)))
+         (= turn player)
+         (or (not= origin :home) (> (home player) 0))
+         (or (= origin :home) (= player (get stones origin)))
          (or (nil? in-destination) (= (opponent turn) in-destination))
          (or (nil? in-destination) (not (rosettes destination))))))
 
@@ -145,7 +155,7 @@
   (spec/assert ::move move)
   (spec/assert ::board board)
   (contains? (valid-moves board roll) move))
-    
+
 (defn move-stone
   "- If the origin is in the board must be replaced with nil.
    - If the destination content is an opponent stone, the amount of stones
@@ -199,7 +209,7 @@
                    (filter (partial valid-non-pass-move? board)))]
     (if-not (empty? moves)
       (set moves)
-      (set (pass-move roll turn)))))
+      #{(pass-move roll turn)})))
 
 (defn must-pass?
   "returns true if pass is a valid move"
