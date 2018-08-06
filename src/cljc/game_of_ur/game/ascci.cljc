@@ -24,7 +24,7 @@
        (apply hash-map)))
 
 (defn stones->string
-  "It translates the :stones key of a board to a string"
+  "It translates the :stones key of a board to a vector of strings"
   [stones]
   (let [key->string {:black "[o]" :white "[x]" nil "[ ]"}
         gaps        [[2 -1] [2 1] [1 -1] [1 1]]] ; Coords of the rectangle that aren't part of the board
@@ -35,8 +35,8 @@
          (reduce conj $ (get-rosettes stones))
          (map #(apply str (map $ %)) coords))))
 
-(defn print-board
-  "Prints a board given a board, player, roll, and destination.
+(defn print-game-state
+  "Prints a game-state given a board, player, roll, and destination.
    Example:
 
           -3 -2 -1  0  1  2  3  4 
@@ -67,11 +67,12 @@
       (println (str " from " origin " to " destination "\n")))))
 
 (defn graphic-simulation
-  "Prints every step of a AI vs AI game simulation, until the game is ended."
+  "Prints every step of an AI vs AI game simulation, until the game is ended.
+   see: ai/simulate-game"
   [eval-fn-black eval-fn-white depth]
   (let [game (ai/simulate-game eval-fn-black eval-fn-white depth)
         show (fn [[board {:keys [origin destination player roll]}]]
-               (print-board board player roll origin destination))]
+               (print-game-state board player roll origin destination))]
     (doall (map show game))))
 
 (defn get-player-move
@@ -92,12 +93,12 @@
           (recur board valid-moves roll)))))
 
 (defn game-loop
-  "Given a starting board, a color chosen by the player and a depth for the AI
-   will simulate a gem until the player gets bured and closes the repl, or until
+  "Given a starting board, a color chosen by the player and a depth for the AI,
+   will simulate a game until the player gets bured and closes the repl, or until
    the game ends"
   [board color depth]
   (loop [board board, player nil, roll nil, origin nil, destination nil]
-    (do (print-board board player roll origin destination)
+    (do (print-game-state board player roll origin destination)
       (when-not (game/game-ended? board)
         (let [roll   (rand-nth [0 1 1 1 1 2 2 2 2 2 2 3 3 3 3 4])
               move   (if (= (:turn board) color)
