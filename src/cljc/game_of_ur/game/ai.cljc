@@ -57,7 +57,7 @@
   (->> (game/valid-moves board roll)
        (map (partial game/child-board board))
        (map (partial evaluate-board-branch board-eval-fn depth))
-       (apply max)))
+       (reduce max)))
 
 (defn best-move
   "Using the provided function evaluates the board's possible child boards, and returns the best move.
@@ -67,8 +67,7 @@
     (->> (game/valid-moves board roll)
          (map (fn [move] [(game/child-board board move) move]))
          (map (fn [[child-board move]] [(evaluate-board-branch eval-fn depth child-board) move]))
-         (sort-by (fn [[value _]] (- value)))
-         (first)
+         (reduce (fn [[a a'] [b b']] (if (> a b) [a a'] [b b'])))
          (second))))
 
 (defn take-until
