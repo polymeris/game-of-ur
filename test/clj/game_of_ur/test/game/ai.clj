@@ -1,6 +1,7 @@
 (ns game-of-ur.test.game.ai
   (:require [clojure.test :refer [deftest testing is]]
-            [game-of-ur.game.ai :as ai]))
+            [game-of-ur.game.ai :as ai]
+            [game-of-ur.game.board :as b]))
 
 (def white-turn
   {:home   {:white 3, :black 5}
@@ -24,3 +25,10 @@
 (deftest endgame-evaluation
   (is (= :goal (:destination (ai/best-move ai/dumb-evaluation-fn 3 endgame-black-turn 2))))
   (is (= [3 1] (:destination (ai/best-move ai/dumb-evaluation-fn 3 endgame-black-turn 1)))))
+
+(deftest simulation-ends-in-finished-game
+  (is (-> (ai/simulate-game ai/dumb-evaluation-fn ai/dumb-evaluation-fn 1)
+          (last)
+          (first)
+          (b/game-ended?))))
+                            
