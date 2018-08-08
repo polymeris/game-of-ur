@@ -1,12 +1,12 @@
-(ns game-of-ur.game.ascci
+(ns game-of-ur.ascii
   #?(:clj
      (:require
-      [game-of-ur.game.board :as game]
+      [game-of-ur.game.board :as board]
       [game-of-ur.game.ai :as ai]
       [clojure.string :as cs])
      :cljs
      (:require
-      [game-of-ur.game.board :as game]
+      [game-of-ur.game.board :as board]
       [game-of-ur.game.ai :as ai]
       [clojure.string :as cs])))
 
@@ -18,7 +18,7 @@
 (defn get-rosettes
   "Assigns '[~]' to rosettes coordinates that do not have a stone on top"
   [stones]
-  (->> game/rosettes
+  (->> board/rosettes
        (filter (comp nil? stones))
        (mapcat (fn [r] [r "[~]"]))
        (apply hash-map)))
@@ -50,7 +50,7 @@
       black rolled 2 from :home to [-1 1]
   "
   [{:keys [home stones] :as board} player roll origin destination]
-  (let [in-goal    (game/stones-in-goal board)
+  (let [in-goal    (board/stones-in-goal board)
         white-goal (apply str (concat (repeat (- 18 (:white home)) " ")
                                       (repeat (:white in-goal) \x)))
         black-goal (apply str (concat (repeat (- 18 (:black home)) " ")
@@ -75,7 +75,7 @@
                (print-game-state board player roll origin destination))]
     (doall (map show game))))
 
-(defn get-player-move
+(defn player-move
   "Asks the player for a coordinate. It will check if the coordinates is a correct
    stone to move, but it will not check if the coordinate is correctly written, or if
    it's an unexpected value.  Expected values are 'home', 'pass', or a valid coordinate
@@ -87,22 +87,22 @@
             origin (cond (= entry "home") :home
                          (= entry "pass") :pass
                          :else            (mapv read-string (cs/split entry #" ")))]
-        (if (contains? (game/valid-moves board roll)
-              (game/full-move {:roll roll :origin origin :player (:turn board)}))
-          (game/full-move {:roll roll :origin origin :player (:turn board)})
+        (if (contains? (board/valid-moves board roll)
+              (board/full-move {:roll roll :origin origin :player (:turn board)}))
+          (board/full-move {:roll roll :origin origin :player (:turn board)})
           (recur board valid-moves roll)))))
 
 (defn game-loop
   "Given a starting board, a color chosen by the player and a depth for the AI,
    will simulate a game until the player gets bured and closes the repl, or until
    the game ends"
-  [board color depth]
+  [board evaluation-fn color depth]
   (loop [board board, player nil, roll nil, origin nil, destination nil]
     (do (print-game-state board player roll origin destination)
-      (when-not (game/game-ended? board)
+      (when-not (board/game-ended? board)
         (let [roll   (rand-nth [0 1 1 1 1 2 2 2 2 2 2 3 3 3 3 4])
               move   (if (= (:turn board) color)
-                       (get-player-move board (game/valid-moves board roll) roll)
-                       (ai/best-move ai/dumb-evaluation-fn depth board roll))
-              nboard (game/child-board board move)]
+                       (player-move board (board/valid-moves board roll) roll)
+                       (ai/best-move evaluation-fn depth board roll))
+              nboard (board/child-board board move)]
           (recur nboard (:turn board) roll (:origin move) (:destination move)))))))
