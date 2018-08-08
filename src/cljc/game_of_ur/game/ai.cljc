@@ -55,8 +55,8 @@
   "Recursively evaluates the value of the possible child boards for the given board and roll."
   [board-eval-fn depth board roll]
   (->> (game/valid-moves board roll)
-       (map (partial game/child-board board))
-       (map (partial evaluate-board-branch board-eval-fn depth))
+       (map (comp (partial evaluate-board-branch board-eval-fn depth)
+                  (partial game/child-board board)))
        (reduce max)))
 
 (defn best-move
@@ -65,9 +65,9 @@
   [board-eval-fn depth board roll]
   (let [eval-fn (comp (if (= (:turn board) :white) - +) board-eval-fn)]
     (->> (game/valid-moves board roll)
-         (map (fn [move] [(game/child-board board move) move]))
-         (map (fn [[child-board move]] [(evaluate-board-branch eval-fn depth child-board) move]))
-         (reduce (fn [[a a'] [b b']] (if (> a b) [a a'] [b b'])))
+         (map (comp (fn [[child-board move]] [(evaluate-board-branch eval-fn depth child-board) move])
+                    (fn [move] [(game/child-board board move) move])))
+         (reduce (partial max-key first))
          (second))))
 
 (defn take-until
