@@ -1,14 +1,8 @@
 (ns game-of-ur.ascii
-  #?(:clj
-     (:require
-      [game-of-ur.game.board :as board]
-      [game-of-ur.game.ai :as ai]
-      [clojure.string :as cs])
-     :cljs
-     (:require
-      [game-of-ur.game.board :as board]
-      [game-of-ur.game.ai :as ai]
-      [clojure.string :as cs])))
+  (:require
+    [game-of-ur.game.board :as board]
+    [game-of-ur.game.ai :as ai]
+    [clojure.string :as cs]))
 
 ;; rectangle board coordinates
 (def coords [[[-3 -1] [-2 -1] [-1 -1] [0 -1] [1 -1] [2 -1] [3 -1] [4 -1]]
