@@ -47,15 +47,15 @@
   [board-eval-fn depth board]
   (if (or (game/game-ended? board) (zero? depth))
     (board-eval-fn board)
-    (->> roll-probability
-         (map (fn [[roll prob]] (* prob (expected-child-board-value board-eval-fn (dec depth) board roll))))
-         (reduce +))))
+    #(->> roll-probability
+          (map (fn [[roll prob]] (* prob (expected-child-board-value board-eval-fn (dec depth) board roll))))
+          (reduce +))))
 
 (defn expected-child-board-value
   "Recursively evaluates the value of the possible child boards for the given board and roll."
   [board-eval-fn depth board roll]
   (->> (game/valid-moves board roll)
-       (map (comp (partial evaluate-board-branch board-eval-fn depth)
+       (map (comp (partial trampoline evaluate-board-branch board-eval-fn depth)
                   (partial game/child-board board)))
        (reduce max)))
 
@@ -65,7 +65,7 @@
   [board-eval-fn depth board roll]
   (let [eval-fn (comp (if (= (:turn board) :white) - +) board-eval-fn)]
     (->> (game/valid-moves board roll)
-         (map (comp (fn [[child-board move]] [(evaluate-board-branch eval-fn depth child-board) move])
+         (map (comp (fn [[child-board move]] [(trampoline evaluate-board-branch eval-fn depth child-board) move])
                     (fn [move] [(game/child-board board move) move])))
          (reduce (partial max-key first))
          (second))))
