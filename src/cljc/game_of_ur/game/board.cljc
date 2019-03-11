@@ -121,7 +121,7 @@
   [{:keys [roll player origin] :as move}]
   (spec/assert ::move move)
   (let [path (get paths player)
-        destination (if (= :pass origin)
+        destination (if (or (zero? roll) (= :pass origin))
                       :pass
                       (get path (+ roll (.indexOf path origin))))]
     (assoc move :destination destination)))
@@ -135,11 +135,12 @@
      - Either the destination is empty, or there is an oppnent stone on it and
        the square is not a member of rosettes."
   [{:keys [home turn stones] :as board}
-   {:keys [player origin destination] :as move}]
+   {:keys [player origin destination roll] :as move}]
   (spec/assert ::board board)
   (spec/assert ::move move)
   (let [in-destination (get stones destination)]
     (and destination
+         (not= 0 roll)
          (= turn player)
          (or (not= origin :home) (> (home player) 0))
          (or (= origin :home) (= player (get stones origin)))
