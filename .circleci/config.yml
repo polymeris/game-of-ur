@@ -36,11 +36,20 @@ jobs:
             - public
   deploy:
     docker:
-      - image: circleci/clojure:lein
+      - image: node:8.10.0
     steps:
+      - checkout
       - attach_workspace:
           at: resources
-      - run: ls resources/public
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci@polymeris.dev"
+            git config user.name "ci"
+      - run:
+          name: Deploy to gh-pages branch
+          command: gh-pages --dist resources/public
 
 workflows:
   version: 2
