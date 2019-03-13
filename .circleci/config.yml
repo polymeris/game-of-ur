@@ -31,7 +31,7 @@ jobs:
           key: v1-dependencies-{{ checksum "project.clj" }}
       - run: lein cljsbuild once min
       - persist_to_workspace:
-          root: .
+          root: resources
           paths:
             - public
   deploy:
@@ -39,8 +39,8 @@ jobs:
       - image: circleci/clojure:lein
     steps:
       - attach_workspace:
-          at: public
-      - run: ls public
+          at: resources
+      - run: ls resources/public
 
 workflows:
   version: 2
