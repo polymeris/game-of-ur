@@ -1,0 +1,57 @@
+version: 2
+jobs:
+  test-clj:
+    docker:
+      - image: circleci/clojure:lein
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            - v1-dependencies-
+      - run: lein deps
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
+      - run: lein test
+  build:
+    docker:
+      - image: circleci/clojure:lein
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            - v1-dependencies-
+      - run: lein deps
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
+      - run: lein cljsbuild once min
+      - persist_to_workspace:
+          root: .
+          paths:
+            - public
+  deploy:
+    docker:
+      - image: circleci/clojure:lein
+    steps:
+      - attach_workspace:
+          at: public
+      - run: ls public
+
+workflows:
+  version: 2
+  test-build-deploy:
+    jobs:
+      - test-clj
+      - build
+      - deploy:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-clj
+            - build
