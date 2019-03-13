@@ -52,7 +52,7 @@ jobs:
             - "43:34:cd:cc:e6:d4:8d:19:52:fa:5a:83:33:0e:59:cf"
       - run:
           name: Deploy to gh-pages branch
-          command: gh-pages --dist resources/public
+          command: gh-pages --dist resources/public --message "[skip ci] Deployment"
 
 workflows:
   version: 2
