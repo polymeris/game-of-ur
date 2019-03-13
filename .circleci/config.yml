@@ -47,6 +47,9 @@ jobs:
             npm install -g --silent gh-pages@2.0.1
             git config user.email "ci@polymeris.dev"
             git config user.name "ci"
+      - add_ssh_keys:
+          fingerprints:
+            - "43:34:cd:cc:e6:d4:8d:19:52:fa:5a:83:33:0e:59:cf"
       - run:
           name: Deploy to gh-pages branch
           command: gh-pages --dist resources/public
