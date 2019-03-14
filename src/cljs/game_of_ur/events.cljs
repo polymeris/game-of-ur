@@ -1,7 +1,7 @@
 (ns game-of-ur.events
   (:require [re-frame.core :as re-frame]
             [game-of-ur.db :as db]
-            [game-of-ur.game.ai :as ai]
+            [game-of-ur.ai.minmax :as mm]
             [game-of-ur.game.board :as board]))
 
 (re-frame/reg-fx
@@ -62,7 +62,7 @@
   (fn [{{:keys [roll moves]} :db} [_]]
     (when roll
       (let [board (moves->board moves)
-            move (ai/best-move ai/dumb-evaluation-fn 3 board roll)]
+            move (mm/best-move mm/dumb-evaluation-fn 3 board roll)]
         {:dispatch [:make-move move]}))))
 
 (re-frame/reg-event-db
