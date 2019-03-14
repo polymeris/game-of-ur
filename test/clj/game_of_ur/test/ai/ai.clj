@@ -28,7 +28,7 @@
   (is (= :goal (:destination (mm/best-move mm/dumb-evaluation-fn 3 endgame-black-turn 2))))
   (is (= [3 1] (:destination (mm/best-move mm/dumb-evaluation-fn 3 endgame-black-turn 1)))))
 
-(deftest simulation-ends-in-finished-game
+(deftest minmax-simulation-ends-in-finished-game
   (is (-> (ai/simulate-game {:black-fn (fn [b r] (mm/best-move mm/dumb-evaluation-fn 1 b r))
                              :white-fn (fn [b r] (mm/best-move mm/dumb-evaluation-fn 1 b r))})
           (last)
