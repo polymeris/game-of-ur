@@ -1,6 +1,7 @@
 (ns game-of-ur.test.ai.ai
   (:require [clojure.test :refer [deftest testing is]]
             [game-of-ur.ai.minmax :as mm]
+            [game-of-ur.ai.mcts :as mcts]
             [game-of-ur.ai.ai :as ai]
             [game-of-ur.game.board :as b]))
 
@@ -27,10 +28,16 @@
   (is (= :goal (:destination (mm/best-move mm/dumb-evaluation-fn 3 endgame-black-turn 2))))
   (is (= [3 1] (:destination (mm/best-move mm/dumb-evaluation-fn 3 endgame-black-turn 1)))))
 
-(deftest simulation-ends-in-finished-game
+(deftest minmax-simulation-ends-in-finished-game
   (is (-> (ai/simulate-game {:black-fn (fn [b r] (mm/best-move mm/dumb-evaluation-fn 1 b r))
                              :white-fn (fn [b r] (mm/best-move mm/dumb-evaluation-fn 1 b r))})
           (last)
           (first)
           (b/game-ended?))))
-                            
+
+(deftest mcts-simulation-ends-in-finished-game
+  (is (-> (ai/simulate-game {:black-fn (fn [b r] (mcts/best-move b r 1))
+                             :white-fn (fn [b r] (mcts/best-move b r 1))})
+          (last)
+          (first)
+          (b/game-ended?))))
