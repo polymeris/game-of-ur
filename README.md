@@ -1,5 +1,5 @@
 # game-of-ur
-[![CircleCI](https://circleci.com/gh/polymeris/cljs-aws.svg?style=svg)](https://circleci.com/gh/polymeris/cljs-aws)
+[![CircleCI](https://circleci.com/gh/polymeris/game-of-ur.svg?style=svg)](https://circleci.com/gh/polymeris/game-of-ur)
 
 [Live Demo](https://polymeris.github.io/game-of-ur/)
 
