@@ -2,17 +2,19 @@
   (:require [game-of-ur.game.board :as game-board]
             [game-of-ur.views.board :as board]
             [re-frame.core :as re-frame]
-            [game-of-ur.config :as config]))
+            [game-of-ur.config :as config]
+            [game-of-ur.views.style :as style]))
 
 (defn main-panel []
   (let [roll @(re-frame/subscribe [:roll])
         board-state @(re-frame/subscribe [:board-state])
         last-move @(re-frame/subscribe [:last-move])]
-    [:div
+    [:main {:style style/main}
      [board/board board-state last-move]
      (when (and roll (game-board/must-pass? board-state roll))
        [:button.pass
-        {:on-click #(re-frame/dispatch
+        {:style    style/button
+         :on-click #(re-frame/dispatch
                       [:make-move
                        (game-board/pass-move roll (get board-state :turn))])}
         "Pass"])
