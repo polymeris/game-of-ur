@@ -98,7 +98,8 @@
         roll @(re-frame/subscribe [:roll])]
     [:svg {:width    "100%"
            :height   "100%"
-           :view-box "-4 -2.75 9 5.5"}
+           :view-box "-4 -2.75 9 5.5"
+           :style    {:max-height "100vh"}}
      [:defs
       [:filter {:id "drop-shadow" :height "150%"}
        [:feOffset {:in "SourceAlpha" :dy 0.015}]

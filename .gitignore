@@ -17,4 +17,3 @@ pom.xml
 /.lein-*
 /.env
 .nrepl-port
-/resources/public/css

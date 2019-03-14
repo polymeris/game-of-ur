@@ -4,8 +4,7 @@
                  [reagent "0.6.0"]
                  [re-frame "0.9.2"]
                  [re-frisk "0.3.2"]]
-  :plugins [[lein-cljsbuild "1.1.4"]
-            [lein-sassc "0.10.4"]]
+  :plugins [[lein-cljsbuild "1.1.4"]]
   :min-lein-version "2.5.3"
   :source-paths ["src/clj" "src/cljc"]
 
@@ -26,11 +25,6 @@
 
   ;; TEST
   :test-paths ["test/clj"]
-  
-  ;; RESOURCES
-  :sassc [{:src       "resources/sass/screen.sass"
-           :output-to "resources/public/css/screen.css"
-           :style     "compressed"}]
 
   ;; BUILDS
   :cljsbuild {:builds [{:id           "dev"
