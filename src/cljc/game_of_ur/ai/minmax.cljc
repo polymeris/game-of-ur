@@ -1,7 +1,7 @@
 (ns game-of-ur.ai.minmax
   #?(:clj
      (:require
-       [clojure.spec :as spec]
+       [clojure.spec.alpha :as spec]
        [game-of-ur.game.board :as game])
      :cljs
      (:require

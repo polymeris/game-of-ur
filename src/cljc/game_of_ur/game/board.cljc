@@ -1,7 +1,7 @@
 (ns game-of-ur.game.board
   #?(:clj
      (:require
-       [clojure.spec :as spec]
+       [clojure.spec.alpha :as spec]
        [clojure.set :as set])
      :cljs
      (:require
