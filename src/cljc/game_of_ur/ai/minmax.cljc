@@ -56,7 +56,7 @@
   [board-eval-fn depth board roll]
   (->> (game/valid-moves board roll)
        (map (comp (partial trampoline evaluate-board-branch board-eval-fn depth)
-                  (partial game/child-board board)))
+                  (partial game/move-stone board)))
        (reduce max)))
 
 (defn best-move
@@ -66,6 +66,6 @@
   (let [eval-fn (comp (if (= (:turn board) :white) - +) board-eval-fn)]
     (->> (game/valid-moves board roll)
          (map (comp (fn [[child-board move]] [(trampoline evaluate-board-branch eval-fn depth child-board) move])
-                    (fn [move] [(game/child-board board move) move])))
+                    (fn [move] [(game/move-stone board move) move])))
          (reduce (partial max-key first))
          (second))))

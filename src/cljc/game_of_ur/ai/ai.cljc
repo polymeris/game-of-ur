@@ -29,7 +29,7 @@
                                black-fn))
           (next-board [[board _]]
             (let [move ((decide-fn board) board (roll))]
-              [(game/child-board board move) move]))]
+              [(game/move-stone board move) move]))]
     (->> [game/initial-board nil]
          (iterate next-board)
          (take-until (comp game/game-ended? first)))))
