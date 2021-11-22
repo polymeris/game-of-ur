@@ -41,6 +41,18 @@
    (when config/debug?
      [:text {:x 0 :y 0.075 :text-anchor :middle :font-size 0.15} (str "[" x ", " y "]")])])
 
+
+(defn- pass-button [board-state]
+  (let [y (if (= :black (:turn board-state)) 0.7 -1.2)]
+   [:g {:transform (str "translate(0,0)")}
+    [:rect {:x 1.01 :y y :width 1 :height 0.5
+            :fill (style/palette :cell)
+            :stroke (style/palette :cell-border)
+            :stroke-width 0.015}]
+    [:text  {:x 1.5 :y (+ y 0.32) :text-anchor :middle :font-size 0.2
+             :fill style/dark}
+     "PASS"]]))
+
 (defn- cells []
   (->>
     game-board/valid-positions
@@ -78,9 +90,10 @@
   (when color
     [:circle {:fill (get-in style/palette [:stones color]) :cx x :cy (- y 0.015) :r 0.3 :filter "url(#drop-shadow)"}]))
 
-(defn- in-play-stones [stones]
+(defn- in-play-stones [stones end]
   (->> stones
-       (map (fn [[coords color]] [:g {:on-click #(re-frame/dispatch [:play-stone coords])} (stone [coords color])]))
+       (map (fn [[coords color]] [:g {:on-click #(when-not end (re-frame/dispatch [:play-stone coords]))}
+                                  (stone [coords color])]))
        (into [:g.in-play-stones])))
 
 (defn- off-board-stones [stones location]
@@ -95,7 +108,8 @@
 (defn board []
   (let [{:keys [home stones turn] :as current-board} @(re-frame/subscribe [:board-state])
         last-move @(re-frame/subscribe [:last-move])
-        roll @(re-frame/subscribe [:roll])]
+        roll @(re-frame/subscribe [:roll])
+        end (game-board/game-ended? current-board)]
     [:svg {:width    "100%"
            :height   "100%"
            :view-box "-4 -2.75 9 5.5"
@@ -119,6 +133,11 @@
       [off-board-stones home player-home]
       [:g {:transform "scale(0.45)"}
        [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
-      [in-play-stones stones]
-      [:g {:transform (str "translate(2.25, " (second (player-home turn)) ")")}
-       [dice/dice roll]]]]))
+      [in-play-stones stones end]
+      (when-not end
+        [:g {:transform (str "translate(2.25, " (second (player-home turn)) ")")}
+         [dice/dice roll]])
+      (when (and (not end) roll (game-board/must-pass? current-board roll))
+        [:g {:on-click #(re-frame/dispatch
+                          [:pass roll  (get current-board :turn)])}
+         [pass-button current-board]])]]))

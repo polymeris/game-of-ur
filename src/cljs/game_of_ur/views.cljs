@@ -11,15 +11,8 @@
         last-move @(re-frame/subscribe [:last-move])]
     [:main {:style style/main}
      [board/board board-state last-move]
-     (when (and roll (game-board/must-pass? board-state roll))
-       [:button.pass
-        {:style    style/button
-         :on-click #(re-frame/dispatch
-                      [:make-move
-                       (game-board/pass-move roll (get board-state :turn))])}
-        "Pass"])
 
-     ; Stuff for development purposes below
+     ;;Stuff for development purposes below
      (when config/debug?
        (->> (assoc board-state :last-move last-move)
             (map (fn [[title obj]] [:div [:h4 title] [:tt (str obj)]]))
