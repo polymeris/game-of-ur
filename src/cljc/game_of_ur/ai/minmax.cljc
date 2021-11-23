@@ -8,23 +8,6 @@
        [cljs.spec.alpha :as spec]
        [game-of-ur.game.board :as game])))
 
-(def roll-probability
-  {0 0.0625
-   1 0.25
-   2 0.375
-   3 0.25
-   4 0.0625})
-
-(defn dumb-evaluation-fn
-  "sample board evaluation function"
-  [board]
-  (spec/assert ::game/board board)
-  (if (game/player-won? board :black)
-    10e6
-    (- (+ (* 7 (:black (game/stones-in-goal board))) (* 3 (game/stones-on-board board :black)))
-       (+ (* 7 (:white (game/stones-in-goal board))) (* 3 (game/stones-on-board board :white))))))
-
-
 ;; The following functions build a board search tree
 ;; The tree's root is the current board and branches into possible rolls, weighted by probability, these branches,
 ;; in turn branch into possible child boards for that roll.
@@ -45,9 +28,9 @@
   "Recursively evaluates the provided board's score using the given function up to `depth` levels.
    Calls `expected-child-board-value` to determine the value of the best move for a given roll."
   [board-eval-fn depth board]
-  (if (or (game/game-ended? board) (zero? depth))
+  (if (or (zero? depth) (game/game-ended? board))
     (board-eval-fn board)
-    #(->> roll-probability
+    #(->> game/roll-probability
           (map (fn [[roll prob]] (* prob (expected-child-board-value board-eval-fn (dec depth) board roll))))
           (reduce +))))
 
@@ -56,7 +39,7 @@
   [board-eval-fn depth board roll]
   (->> (game/valid-moves board roll)
        (map (comp (partial trampoline evaluate-board-branch board-eval-fn depth)
-                  (partial game/move-stone board)))
+                  (partial game/unsafe-child-board board)))
        (reduce max)))
 
 (defn best-move
@@ -66,6 +49,6 @@
   (let [eval-fn (comp (if (= (:turn board) :white) - +) board-eval-fn)]
     (->> (game/valid-moves board roll)
          (map (comp (fn [[child-board move]] [(trampoline evaluate-board-branch eval-fn depth child-board) move])
-                    (fn [move] [(game/move-stone board move) move])))
+                    (fn [move] [(game/unsafe-child-board board move) move])))
          (reduce (partial max-key first))
          (second))))

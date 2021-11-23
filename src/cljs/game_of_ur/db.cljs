@@ -1,3 +1,4 @@
 (ns game-of-ur.db)
 
-(def default-db {:moves []})
+(def default-db {:moves []
+                 :ai {:black false, :white false}})

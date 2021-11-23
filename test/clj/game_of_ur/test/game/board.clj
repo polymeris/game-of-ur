@@ -1,7 +1,11 @@
 (ns game-of-ur.test.game.board
   (:import  [clojure.lang ExceptionInfo])
   (:require [clojure.test :refer [deftest testing is]]
+            [clojure.spec.alpha :as spec]
             [game-of-ur.game.board :as b]))
+
+(spec/check-asserts true)
+
 
 (def move-white-home-0 {:roll 0, :origin :home, :player :white})
 (def move-black-home-0 {:roll 0, :origin :home, :player :black})
@@ -27,26 +31,36 @@
 
 (def white-turn
   {:home   {:white 3, :black 5}
+   :goal   {:white (- (get-in b/initial-board [:home :black]) (+ 3 1)),
+            :black (- (get-in b/initial-board [:home :black]) (+ 5 2))}
    :turn   :white
    :stones {[-2 -1] :white, [-3 -1] :black, [-2 0] :black}})
 
 (def black-turn-1
   {:home   {:white 4, :black 4}
+   :goal   {:white (- (get-in b/initial-board [:home :black]) (+ 4 2)),
+            :black (- (get-in b/initial-board [:home :black]) (+ 4 1))}
    :turn   :black
    :stones {[-3 -1] :white, [3 0] :black, [-3 1] :white}})
 
 (def black-turn-2
   {:home   {:white 3, :black 0},
+   :goal   {:white (- (get-in b/initial-board [:home :black]) (+ 3 0)),
+            :black (- (get-in b/initial-board [:home :black]) (+ 0 2))}
    :turn   :black
    :stones {[-2 0] :black, [0 0] :black}})
 
 (def black-turn-3
   {:home   {:white 3, :black 0},
+   :goal   {:white (- (get-in b/initial-board [:home :black]) (+ 3 0)),
+            :black (- (get-in b/initial-board [:home :black]) (+ 0 1))}
    :turn   :black
    :stones {[-2 0] :black}})
 
 (def no-valid-move-for-black
   {:home   {:white 0, :black 0},
+   :goal   {:white (- (get-in b/initial-board [:home :black]) (+ 0 1)),
+            :black (- (get-in b/initial-board [:home :black]) (+ 0 2))}
    :turn   :black
    :stones {[-3 0] :black, [0 0] :white, [4, 1] :black}})
 
@@ -68,27 +82,29 @@
   (is (not (b/valid-move? black-turn-2 (b/full-move move-black-2)))) ; there is already a black stone at [0 0]
   (is (b/valid-move? black-turn-3 (b/full-move move-black-2)))
   (is (not (b/valid-move? black-turn-1 (b/full-move pass-move)))) ; non of these
-  (is (not (b/valid-move? black-turn-2 (b/full-move pass-move)))) ; are valid 
+  (is (not (b/valid-move? black-turn-2 (b/full-move pass-move)))) ; are valid
   (is (not (b/valid-move? black-turn-3 (b/full-move pass-move)))) ; passing positions
   (is (b/valid-move? no-valid-move-for-black (b/full-move pass-move)))) ; :pass is valid iff there are no other valid-moves
 
-(defn clear-nil-stones [board]
-  (when board (update board :stones #(into {} (filter second %)))))
+(defn clear-nil-stones-and-goal [board]
+  (when board (-> board
+                  (update :stones #(into {} (filter second %)))
+                  (dissoc :goal))))
 
 (deftest child-board
-  (is (= (clear-nil-stones (assoc b/initial-board :turn :black))
-         (clear-nil-stones (b/child-board b/initial-board (b/full-move pass-move-0)))))
+  (is (= (clear-nil-stones-and-goal (assoc b/initial-board :turn :black))
+         (clear-nil-stones-and-goal (b/child-board b/initial-board (b/full-move pass-move-0)))))
   (is (= {:home {:black 7, :white 6}, :turn :black, :stones {[-2 -1] :white}}
-         (clear-nil-stones (b/child-board b/initial-board (b/full-move move-white-home-3)))))
-  (is (= (clear-nil-stones (assoc white-turn :turn :black))
-         (clear-nil-stones (b/child-board white-turn (b/full-move pass-move-0)))))
+         (clear-nil-stones-and-goal (b/child-board b/initial-board (b/full-move move-white-home-3)))))
+  (is (= (clear-nil-stones-and-goal (assoc white-turn :turn :black))
+         (clear-nil-stones-and-goal (b/child-board white-turn (b/full-move pass-move-0)))))
   (is (= {:home {:white 3, :black 6}, :turn :black, :stones {[-3 -1] :black, [-2 0] :white}} ; black captured
-         (clear-nil-stones (b/child-board white-turn (b/full-move move-white-2)))))
-  (is (= (clear-nil-stones (assoc black-turn-1 :turn :white))
-         (clear-nil-stones (b/child-board black-turn-1 (b/full-move move-black-home-0)))))
+         (clear-nil-stones-and-goal (b/child-board white-turn (b/full-move move-white-2)))))
+  (is (= (clear-nil-stones-and-goal (assoc black-turn-1 :turn :white))
+         (clear-nil-stones-and-goal (b/child-board black-turn-1 (b/full-move move-black-home-0)))))
   (is (= {:home {:white 3, :black 0}, :turn :white, :stones {[0 0] :black, [-1 0] :black}}
-         (clear-nil-stones (b/child-board black-turn-2 (b/full-move move-black-1)))))
+         (clear-nil-stones-and-goal (b/child-board black-turn-2 (b/full-move move-black-1)))))
   (is (= {:home {:white 3, :black 0}, :turn :black, :stones {[0 0] :black}} ; lands on rosette and plays again
-         (clear-nil-stones (b/child-board black-turn-3 (b/full-move move-black-2)))))
+         (clear-nil-stones-and-goal (b/child-board black-turn-3 (b/full-move move-black-2)))))
   (is (= {:home {:white 0 :black 0}, :turn :white, :stones {[-3 0] :black, [0 0] :white, [4, 1] :black}} ; If there is no possible valid move
-         (b/child-board no-valid-move-for-black (b/full-move pass-move))))) ; should only change :turn
+         (clear-nil-stones-and-goal (b/child-board no-valid-move-for-black (b/full-move pass-move)))))) ; should only change :turn

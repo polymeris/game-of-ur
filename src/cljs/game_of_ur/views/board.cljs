@@ -132,7 +132,7 @@
       (when last-move [move-path last-move])
       [off-board-stones home player-home]
       [:g {:transform "scale(0.45)"}
-       [off-board-stones (game-board/stones-in-goal current-board) player-goal]]
+       [off-board-stones (get current-board :goal) player-goal]]
       [in-play-stones stones end]
       (when-not end
         [:g {:transform (str "translate(2.25, " (second (player-home turn)) ")")}

@@ -22,14 +22,12 @@
   "Returns a lazy-sequence like '([board-1 move-1] [board-2 move-2] ... [board-n move-n])
    where board-n is a finished game. `black-fn` and `white-fn` should be functions
    that take a board and a roll and return a valid move."
-  [{:keys [black-fn white-fn]}]
+  [fns]
   (letfn [(roll [] (rand-nth [0 1 1 1 1 2 2 2 2 2 2 3 3 3 3 4]))
-          (decide-fn [board] (if (= :white (:turn board))
-                               white-fn
-                               black-fn))
+          (decide-fn [board] (get fns (:turn board)))
           (next-board [[board _]]
             (let [move ((decide-fn board) board (roll))]
-              [(game/move-stone board move) move]))]
+              [(game/unsafe-child-board board move) move]))]
     (->> [game/initial-board nil]
          (iterate next-board)
          (take-until (comp game/game-ended? first)))))
