@@ -38,17 +38,21 @@
   "Recursively evaluates the value of the possible child boards for the given board and roll."
   [board-eval-fn depth board roll]
   (->> (game/valid-moves board roll)
-       (map (comp (partial trampoline evaluate-board-branch board-eval-fn depth)
-                  (partial game/unsafe-child-board board)))
-       (reduce max)))
+       (map (fn [move] (trampoline evaluate-board-branch board-eval-fn depth
+                                   (game/unsafe-child-board board move))))
+       (reduce (if (= :black (:turn board)) max min))))
 
 (defn best-move
   "Using the provided function evaluates the board's possible child boards, and returns the best move.
    Calls the mutually recursive `evaluate-board-branch` and `expected-child-board-value`"
-  [board-eval-fn depth board roll]
-  (let [eval-fn (comp (if (= (:turn board) :white) - +) board-eval-fn)]
-    (->> (game/valid-moves board roll)
-         (map (comp (fn [[child-board move]] [(trampoline evaluate-board-branch eval-fn depth child-board) move])
-                    (fn [move] [(game/unsafe-child-board board move) move])))
-         (reduce (partial max-key first))
-         (second))))
+  [eval-fn depth board roll]
+  (if (game/game-ended? board)
+    board
+    (let [move-val   (fn [m] (trampoline evaluate-board-branch eval-fn depth
+                                         (game/unsafe-child-board board m)))
+          options    (map (juxt identity move-val) (game/valid-moves board roll))
+          best-score (reduce (if (= :black (:turn board)) max min) (map second options))]
+      (->> options
+           (filter (comp (partial = best-score) second))
+           (rand-nth)
+           (first)))))
