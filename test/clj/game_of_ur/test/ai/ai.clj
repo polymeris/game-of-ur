@@ -34,12 +34,19 @@
    :stones {[4 1] :black}})
 
 (deftest endgame-evaluation
-  (is (= :goal (:destination (mm/best-move ev/dumb-evaluation-fn 3 endgame-black-turn 2))))
-  (is (= [3 1] (:destination (mm/best-move ev/dumb-evaluation-fn 3 endgame-black-turn 1)))))
+  (is (= :goal (:destination (ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3) endgame-black-turn 2))))
+  (is (= [3 1] (:destination (ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3) endgame-black-turn 1))))
+  (is (= :goal (:destination (ai/best-move (partial mm/minimax-rank-move ev/dumb-evaluation-fn 3) endgame-black-turn 2))))
+  (is (= [3 1] (:destination (ai/best-move (partial mm/minimax-rank-move ev/dumb-evaluation-fn 3) endgame-black-turn 1)))))
 
 (deftest simulation-ends-in-finished-game
-  (is (-> (ai/simulate-game {:black (partial mm/best-move ev/dumb-evaluation-fn 1)
-                             :white (partial mm/best-move ev/dumb-evaluation-fn 1)})
+  (is (-> (ai/simulate-game {:black (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 1))
+                             :white (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 1))})
+          (last)
+          (first)
+          (b/game-ended?)))
+  (is (-> (ai/simulate-game {:black (partial ai/best-move (partial mm/minimax-rank-move ev/dumb-evaluation-fn 1))
+                             :white (partial ai/best-move (partial mm/minimax-rank-move ev/dumb-evaluation-fn 1))})
           (last)
           (first)
           (b/game-ended?))))

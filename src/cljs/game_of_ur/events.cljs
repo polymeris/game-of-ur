@@ -1,8 +1,9 @@
 (ns game-of-ur.events
   (:require [re-frame.core :as re-frame]
             [game-of-ur.db :as db]
-            [game-of-ur.ai.minmax :as mm]
             [game-of-ur.game.board :as board]
+            [game-of-ur.ai.minmax :as mm]
+            [game-of-ur.ai.ai :as ai]
             [game-of-ur.ai.eval :as ev]))
 
 (re-frame/reg-fx
@@ -60,14 +61,16 @@
   [moves]
   (reduce board/child-board board/initial-board moves))
 
+(def computer-move
+  {:white (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3))
+   :black (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3))})
+
 (re-frame/reg-event-fx
   :play-best-move
   (fn [{{:keys [roll moves auto-roll]} :db} [_]]
     (when roll
       (let [board (moves->board moves)
-            move (case (:turn board)
-                   :black (mm/best-move ev/dumb-evaluation-fn 3 board roll)
-                   :white (mm/best-move ev/dumb-evaluation-fn 3 board roll))]
+            move ((computer-move (:turn board)) board roll)]
         {:dispatch-n (if auto-roll [[:make-move move] [:roll-dice]] [[:make-move move]])}))))
 
 (re-frame/reg-event-fx

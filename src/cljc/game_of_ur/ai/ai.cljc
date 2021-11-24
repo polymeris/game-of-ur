@@ -31,3 +31,17 @@
     (->> [game/initial-board nil]
          (iterate next-board)
          (take-until (comp game/game-ended? first)))))
+
+(defn best-move
+  "Evaluates which is the best move for a given player, board, and roll. Given
+  the criteria of `rank-fn`. We assume that the greater the number, the better the
+  positions is for black."
+  [rank-fn board roll]
+  (if (game/game-ended? board)
+    board
+    (let [options    (map (fn [m] [m (rank-fn board m)]) (game/valid-moves board roll))
+          best-score (reduce (if (= :black (:turn board)) max min) (map second options))]
+      (->> options
+           (filter (comp (partial = best-score) second))
+           (rand-nth)
+           (first)))))
