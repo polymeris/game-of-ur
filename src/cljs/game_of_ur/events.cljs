@@ -31,12 +31,11 @@
   (fn [db _]
     (roll-dice db)))
 
-(re-frame/reg-event-db
-  :pass
-  (fn [db _]
-    (-> db
-        (update :moves conj {(:roll db) (:player db) :origin :pass :destination :pass})
-        (dissoc :roll))))
+(re-frame/reg-event-fx
+ :pass
+ (fn [{{:keys [auto-roll]} :db} [_ roll turn]]
+   (let [m [:make-move (board/pass-move roll turn)]]
+     {:dispatch-n (if auto-roll [m [:roll-dice]] [m])})))
 
 (re-frame/reg-event-fx
   :play-stone
@@ -59,11 +58,11 @@
 
 (re-frame/reg-event-fx
   :play-best-move
-  (fn [{{:keys [roll moves]} :db} [_]]
+  (fn [{{:keys [roll moves auto-roll]} :db} [_]]
     (when roll
       (let [board (moves->board moves)
             move (mm/best-move mm/dumb-evaluation-fn 3 board roll)]
-        {:dispatch [:make-move move]}))))
+        {:dispatch-n (if auto-roll [[:make-move move] [:roll-dice]] [:make-move move])}))))
 
 (re-frame/reg-event-db
   :set-ai

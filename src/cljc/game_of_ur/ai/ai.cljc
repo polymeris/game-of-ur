@@ -1,7 +1,7 @@
 (ns game-of-ur.ai.ai
   #?(:clj
      (:require
-      [clojure.spec :as spec]
+      [clojure.spec.alpha :as spec]
       [game-of-ur.game.board :as game])
      :cljs
      (:require
@@ -29,7 +29,7 @@
                                black-fn))
           (next-board [[board _]]
             (let [move ((decide-fn board) board (roll))]
-              [(game/child-board board move) move]))]      
+              [(game/child-board board move) move]))]
     (->> [game/initial-board nil]
          (iterate next-board)
          (take-until (comp game/game-ended? first)))))
