@@ -18,3 +18,4 @@ pom.xml
 /.env
 .nrepl-port
 /src/clj/game_of_ur/experiments.clj
+README.html

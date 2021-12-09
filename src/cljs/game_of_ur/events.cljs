@@ -62,8 +62,8 @@
   (reduce board/child-board board/initial-board moves))
 
 (def computer-move
-  {:white (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3))
-   :black (partial ai/best-move (partial mm/alpha-beta-rank-move ev/dumb-evaluation-fn 3))})
+  {:white (partial ai/best-move (partial mm/minimax-rank-move ev/inner-urge 3))
+   :black (partial ai/best-move (partial mm/minimax-rank-move ev/inner-urge 3))})
 
 (re-frame/reg-event-fx
   :play-best-move

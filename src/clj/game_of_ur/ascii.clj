@@ -97,6 +97,6 @@
       (let [roll   (rand-nth [0 1 1 1 1 2 2 2 2 2 2 3 3 3 3 4])
             move   (if (= (:turn board) color)
                      (player-move board (board/valid-moves board roll) roll)
-                     (mm/best-move evaluation-fn depth board roll))
+                     (ai/best-move evaluation-fn depth board roll))
             nboard (board/child-board board move)]
         (recur nboard (:turn board) roll (:origin move) (:destination move))))))

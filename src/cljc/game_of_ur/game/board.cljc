@@ -215,7 +215,7 @@
   (->> (valid-origins turn)
        (map (fn [origin] (full-move {:roll roll, :origin origin, :player turn})))))
 
-(defn valid-moves
+(defn valid-moves'
   "returns all valid moves with a given roll"
   [{:keys [turn] :as board} roll]
   (spec/assert ::board board)
@@ -223,8 +223,11 @@
   (let [moves (->> (all-moves board roll)
                    (filter (partial valid-non-pass-move? board)))]
     (if-not (empty? moves)
-      (set moves)
-      #{(pass-move roll turn)})))
+      moves
+      (list (pass-move roll turn)))))
+
+(defn valid-moves [board roll]
+  (set (valid-moves' board roll)))
 
 (defn must-pass?
   "returns true if pass is a valid move"
