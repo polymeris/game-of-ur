@@ -1,8 +1,10 @@
 (ns game-of-ur.events
   (:require [re-frame.core :as re-frame]
             [game-of-ur.db :as db]
+            [game-of-ur.game.board :as board]
             [game-of-ur.ai.minmax :as mm]
-            [game-of-ur.game.board :as board]))
+            [game-of-ur.ai.ai :as ai]
+            [game-of-ur.ai.eval :as ev]))
 
 (re-frame/reg-fx
   :sound
@@ -15,11 +17,16 @@
     db/default-db))
 
 (re-frame/reg-event-db
-  :make-move
+  :make-move'
   (fn [db [_ move]]
     (-> db
         (update :moves conj move)
         (dissoc :roll))))
+
+(re-frame/reg-event-fx
+ :make-move
+ (fn [{{:keys [auto-roll]} :db} [_ move]]
+   {:dispatch-n [[:make-move' move] (when auto-roll [:roll-dice]) [:ai-move]]}))
 
 (defn roll-dice
   "Rolls the dice"
@@ -39,30 +46,40 @@
 
 (re-frame/reg-event-fx
   :play-stone
-  (fn [{{:keys [roll moves auto-roll]} :db} [_ coords]]
+  (fn [{{:keys [roll moves ai auto-roll]} :db} [_ coords]]
     (when roll
       (let [board-state (reduce board/child-board board/initial-board moves)
             move (board/full-move {:roll   roll
                                    :player (:turn board-state)
                                    :origin coords})]
         (when (board/valid-move? board-state move)
-          {:sound      "sfx/clack.mp3"
-           :dispatch-n (filter identity
-                               (list [:make-move move]
-                                     (when auto-roll [:roll-dice])))})))))
+          {:sound    "sfx/clack.mp3"
+           :dispatch [:make-move move]})))))
 
 (defn moves->board
   "Given a seq of moves, returns the current state of the board"
   [moves]
   (reduce board/child-board board/initial-board moves))
 
+(def computer-move
+  {:white (partial ai/best-move (partial mm/minimax-rank-move ev/inner-urge 3))
+   :black (partial ai/best-move (partial mm/minimax-rank-move ev/inner-urge 3))})
+
 (re-frame/reg-event-fx
   :play-best-move
   (fn [{{:keys [roll moves auto-roll]} :db} [_]]
     (when roll
       (let [board (moves->board moves)
-            move (mm/best-move mm/dumb-evaluation-fn 3 board roll)]
-        {:dispatch-n (if auto-roll [[:make-move move] [:roll-dice]] [:make-move move])}))))
+            move ((computer-move (:turn board)) board roll)]
+        {:dispatch-n (if auto-roll [[:make-move move] [:roll-dice]] [[:make-move move]])}))))
+
+(re-frame/reg-event-fx
+ :ai-move
+ (fn [{{:keys [roll moves ai]} :db} [_]]
+   (let [board-state (reduce board/child-board board/initial-board moves)]
+     (when (and (get ai (:turn board-state)) (not (board/game-ended? board-state)))
+       {:dispatch-n [(when-not roll [:roll-dice])]
+        :dispatch-later {:ms 100 :dispatch [:play-best-move]}}))))
 
 (re-frame/reg-event-db
   :set-ai

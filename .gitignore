@@ -17,3 +17,5 @@ pom.xml
 /.lein-*
 /.env
 .nrepl-port
+/src/clj/game_of_ur/experiments.clj
+README.html

@@ -22,12 +22,12 @@
            [3 -1] [4 -1] [4 0] [4 1] [3 1]
            :goal]})
 
+(def valid-origins
+  {:white (-> :white paths set (disj :goal))
+   :black (-> :black paths set (disj :goal))})
+
 (def rosettes
   #{[-3 -1] [-3 1] [0 0] [3 -1] [3 1]})
-
-(defn valid-origins [player]
-  (-> (set (paths player))
-      (disj :goal)))
 
 (def valid-positions
   (-> (set/union (set (:white paths)) (set (:black paths)))
@@ -35,12 +35,20 @@
 
 (def initial-board
   {:home   {:black 7, :white 7}
+   :goal   {:black 0, :white 0}
    :turn   :white
    :stones (into {} (map (fn [k] [k nil]) valid-positions))})
 
 (def opponent
   {:white :black
    :black :white})
+
+(def roll-probability
+  {0 0.0625
+   1 0.25
+   2 0.375
+   3 0.25
+   4 0.0625})
 
 (def stone-colors #{:white :black})
 (spec/def ::position (spec/with-gen #(contains? valid-positions %)
@@ -63,7 +71,8 @@
 (spec/def ::destination (spec/or :h ::home-position :p ::position :g ::goal-position
                                  :pass ::pass-position))
 (spec/def ::home (spec/keys :req-un [::white ::black]))
-(spec/def ::board (spec/keys :req-un [::home ::turn ::stones]))
+(spec/def ::goal (spec/keys :req-un [::white ::black]))
+(spec/def ::board (spec/keys :req-un [::home ::goal ::turn ::stones]))
 (spec/def ::move (spec/keys :req-un [::roll ::origin]))
 (spec/def ::full-move (spec/keys :req-un [::roll ::origin ::destination ::player]))
 
@@ -77,15 +86,6 @@
        (filter #(= % player))
        (count)
        (+ (get home player))))
-
-(defn stones-in-goal
-  "Returns number of stones in goal for the given board and player"
-  [board]
-  (spec/assert ::board board)
-  {:white (- (get-in initial-board [:home :white])
-             (stones-in-play board :white))
-   :black (- (get-in initial-board [:home :black])
-             (stones-in-play board :black))})
 
 (defn stones-on-board
   "Return the number of stones not in goal or home for the given player"
@@ -103,7 +103,8 @@
   [board player]
   (spec/assert ::board board)
   (spec/assert ::player player)
-  (= 0 (stones-in-play board player)))
+  (= (get-in initial-board [:home player])
+     (get-in board [:goal player])))
 
 (defn game-ended?
   "Returns true iff either white or black wins"
@@ -172,7 +173,20 @@
             (not (#{:home :pass} origin)) (assoc-in [:stones origin] nil)
             (not (#{:home :goal :pass} destination)) (assoc-in [:stones destination] player)
             (= opponent-color (get stones destination)) (update-in [:home opponent-color] inc)
-            (= :home origin) (update-in [:home player] dec))))
+            (= :home origin) (update-in [:home player] dec)
+            (= :goal destination) (update-in [:goal player] inc))))
+
+(defn unsafe-child-board
+  "As move-stone, but changing player's turn. As child-move, except
+   it assumes the move is 'full-move' and valid"
+  [{:keys [turn] :as board} {:keys [roll] :as move}]
+  (spec/assert ::board board)
+  (spec/assert ::full-move move)
+  (let [destination (:destination move)
+        next-turn (if (and (not= 0 roll) (rosettes destination))
+                    turn
+                    (opponent turn))]
+    (assoc (move-stone board move) :turn next-turn)))
 
 (defn child-board
   "It takes a move and a board (see specs), and returns
@@ -201,7 +215,7 @@
   (->> (valid-origins turn)
        (map (fn [origin] (full-move {:roll roll, :origin origin, :player turn})))))
 
-(defn valid-moves
+(defn valid-moves'
   "returns all valid moves with a given roll"
   [{:keys [turn] :as board} roll]
   (spec/assert ::board board)
@@ -209,8 +223,11 @@
   (let [moves (->> (all-moves board roll)
                    (filter (partial valid-non-pass-move? board)))]
     (if-not (empty? moves)
-      (set moves)
-      #{(pass-move roll turn)})))
+      moves
+      (list (pass-move roll turn)))))
+
+(defn valid-moves [board roll]
+  (set (valid-moves' board roll)))
 
 (defn must-pass?
   "returns true if pass is a valid move"

@@ -12,8 +12,21 @@
     [:main {:style style/main}
      [board/board board-state last-move]
 
-     ;;Stuff for development purposes below
-     (when config/debug?
+     (if-not config/debug?
+       [:div#dev-helpers {:style {:border "1px solid grey"}}
+        [:span
+         [:input#auto-roll {:type      :checkbox
+                            :on-change #(re-frame/dispatch [:set-auto-roll (aget % "target" "checked")])}]
+         [:label {:for :auto-roll} "Auto-roll"]]
+        [:span
+         [:input#ai-white {:type      :checkbox
+                           :on-change #(re-frame/dispatch [:set-ai :white (aget % "target" "checked")])}]
+         [:label {:for :ai-white} "AI White"]]
+        [:span
+         [:input#ai-black {:type      :checkbox
+                           :on-change #(re-frame/dispatch [:set-ai :black (aget % "target" "checked")])}]
+         [:label {:for :ai-black} "AI Black"]]]
+       ;;Stuff for development purposes below
        (->> (assoc board-state :last-move last-move)
             (map (fn [[title obj]] [:div [:h4 title] [:tt (str obj)]]))
             (into [:div#dev-helpers {:style {:border "1px solid grey"}}
